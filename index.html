@@ -1,1487 +1,272 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LHFORM – Word/PDF vers XLSForm KoboToolbox</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<style>
-  :root {
-    --ink: #0D0D0D;
-    --paper: #F5F2EA;
-    --cream: #EDE9DE;
-    --accent: #1A4FBF;
-    --accent-light: #E8EEFF;
-    --accent-dark: #0D3399;
-    --green: #1A7A45;
-    --green-light: #E8F5EE;
-    --red: #C0392B;
-    --border: #C8C3B5;
-    --muted: #6B6558;
-    --mono: 'IBM Plex Mono', monospace;
-    --display: 'Syne', sans-serif;
-    --body: 'Instrument Sans', sans-serif;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: var(--body);
-    background: var(--paper);
-    color: var(--ink);
-    min-height: 100vh;
-    font-size: 16px;
-    line-height: 1.6;
-  }
-
-  /* HEADER */
-  header {
-    background: var(--ink);
-    color: #FFF;
-    padding: 0 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 64px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .logo {
-    font-family: var(--display);
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .logo-dot {
-    width: 10px;
-    height: 10px;
-    background: var(--accent);
-    border-radius: 50%;
-    display: inline-block;
-  }
-
-  .badge-free {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    font-weight: 500;
-    background: #1A4FBF;
-    color: #fff;
-    padding: 3px 8px;
-    border-radius: 3px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  nav a {
-    color: rgba(255,255,255,0.65);
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-left: 1.5rem;
-    transition: color 0.2s;
-  }
-  nav a:hover { color: #fff; }
-
-  /* HERO */
-  .hero {
-    padding: 4rem 2rem 2rem;
-    max-width: 900px;
-    margin: 0 auto;
-    text-align: center;
-  }
-
-  .hero-tag {
-    display: inline-block;
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-    padding: 4px 12px;
-    border-radius: 3px;
-    margin-bottom: 1.25rem;
-  }
-
-  .hero h1 {
-    font-family: var(--display);
-    font-size: clamp(2.5rem, 6vw, 4.5rem);
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    line-height: 1.05;
-    margin-bottom: 1rem;
-    color: var(--ink);
-  }
-
-  .hero h1 em {
-    font-style: normal;
-    color: var(--accent);
-  }
-
-  .hero p {
-    font-size: 1.1rem;
-    color: var(--muted);
-    max-width: 520px;
-    margin: 0 auto 2.5rem;
-    line-height: 1.7;
-  }
-
-  /* MAIN CARD */
-  .main-card {
-    background: #fff;
-    border: 1.5px solid var(--border);
-    border-radius: 16px;
-    max-width: 780px;
-    margin: 0 auto 3rem;
-    overflow: hidden;
-    box-shadow: 0 4px 32px rgba(0,0,0,0.07);
-  }
-
-  .card-header {
-    background: var(--cream);
-    border-bottom: 1.5px solid var(--border);
-    padding: 1rem 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .card-header span {
-    font-family: var(--mono);
-    font-size: 0.8rem;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-  }
-
-  .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-  .dot-r { background: #FF5F57; }
-  .dot-y { background: #FEBC2E; }
-  .dot-g { background: #28C840; }
-
-  .card-body { padding: 2rem; }
-
-  /* DROP ZONE */
-  .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 12px;
-    padding: 3rem 2rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    background: var(--paper);
-    position: relative;
-  }
-
-  .drop-zone:hover, .drop-zone.dragover {
-    border-color: var(--accent);
-    background: var(--accent-light);
-  }
-
-  .drop-zone.dragover { transform: scale(1.01); }
-
-  .drop-icon {
-    width: 56px;
-    height: 56px;
-    background: var(--ink);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.25rem;
-  }
-
-  .drop-icon svg { color: #fff; }
-
-  .drop-zone h3 {
-    font-family: var(--display);
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: 0.4rem;
-    color: var(--ink);
-  }
-
-  .drop-zone p {
-    color: var(--muted);
-    font-size: 0.9rem;
-    margin-bottom: 1.25rem;
-  }
-
-  .formats {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .fmt-pill {
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    font-weight: 500;
-    padding: 3px 10px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    background: #fff;
-    color: var(--muted);
-    letter-spacing: 0.03em;
-  }
-
-  .btn-select {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--ink);
-    color: #fff;
-    font-family: var(--body);
-    font-size: 0.9rem;
-    font-weight: 600;
-    padding: 0.65rem 1.5rem;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s;
-    margin-bottom: 1rem;
-  }
-
-  .btn-select:hover { background: #2a2a2a; }
-
-  input[type="file"] { display: none; }
-
-  /* FILE INFO */
-  .file-info {
-    display: none;
-    align-items: center;
-    gap: 12px;
-    padding: 0.875rem 1rem;
-    background: var(--green-light);
-    border: 1.5px solid #A8D5BC;
-    border-radius: 10px;
-    margin-top: 1rem;
-  }
-
-  .file-info.show { display: flex; }
-
-  .file-icon {
-    width: 40px;
-    height: 40px;
-    background: var(--green);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .file-name {
-    font-family: var(--mono);
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--ink);
-    word-break: break-all;
-  }
-
-  .file-size {
-    font-size: 0.78rem;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  .btn-remove {
-    margin-left: auto;
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    display: flex;
-  }
-  .btn-remove:hover { color: var(--red); }
-
-  /* OPTIONS */
-  .options-section {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
-  }
-
-  .options-title {
-    font-family: var(--display);
-    font-size: 0.9rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    margin-bottom: 1rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.1em;
-  }
-
-  .option-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  @media (max-width: 560px) { .option-grid { grid-template-columns: 1fr; } }
-
-  .option-card {
-    background: var(--paper);
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    padding: 0.875rem 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .option-card:hover { border-color: var(--accent); background: var(--accent-light); }
-  .option-card.selected { border-color: var(--accent); background: var(--accent-light); }
-
-  .option-check {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    flex-shrink: 0;
-    margin-top: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-  }
-
-  .option-card.selected .option-check {
-    border-color: var(--accent);
-    background: var(--accent);
-  }
-
-  .option-check::after {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #fff;
-    opacity: 0;
-  }
-
-  .option-card.selected .option-check::after { opacity: 1; }
-
-  .option-label {
-    font-weight: 600;
-    font-size: 0.875rem;
-    color: var(--ink);
-  }
-
-  .option-desc {
-    font-size: 0.78rem;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  /* LANGUAGE SELECTOR */
-  .lang-row {
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .lang-row label {
-    font-size: 0.85rem;
-    color: var(--muted);
-    font-weight: 500;
-    white-space: nowrap;
-  }
-
-  .lang-row select {
-    border: 1.5px solid var(--border);
-    border-radius: 7px;
-    padding: 0.4rem 0.75rem;
-    font-family: var(--body);
-    font-size: 0.875rem;
-    color: var(--ink);
-    background: #fff;
-    cursor: pointer;
-    outline: none;
-  }
-
-  .lang-row select:focus { border-color: var(--accent); }
-
-  /* CONVERT BUTTON */
-  .btn-convert {
-    width: 100%;
-    margin-top: 1.5rem;
-    padding: 1rem;
-    background: var(--accent);
-    color: #fff;
-    font-family: var(--display);
-    font-size: 1.1rem;
-    font-weight: 700;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    letter-spacing: -0.01em;
-    transition: background 0.2s, transform 0.1s;
-  }
-
-  .btn-convert:hover { background: var(--accent-dark); }
-  .btn-convert:active { transform: scale(0.99); }
-  .btn-convert:disabled { background: #A0B0D8; cursor: not-allowed; transform: none; }
-
-  /* PROGRESS */
-  .progress-section {
-    display: none;
-    margin-top: 1.5rem;
-  }
-
-  .progress-section.show { display: block; }
-
-  .progress-bar-wrap {
-    background: var(--cream);
-    border-radius: 999px;
-    height: 6px;
-    overflow: hidden;
-    margin-bottom: 0.6rem;
-  }
-
-  .progress-bar {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 999px;
-    transition: width 0.4s ease;
-    width: 0%;
-  }
-
-  .progress-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .step-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
-    color: var(--muted);
-    opacity: 0.4;
-    transition: opacity 0.3s;
-  }
-
-  .step-item.active { color: var(--ink); opacity: 1; font-weight: 500; }
-  .step-item.done { color: var(--green); opacity: 1; }
-
-  .step-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: currentColor;
-    flex-shrink: 0;
-  }
-
-  /* RESULT */
-  .result-section {
-    display: none;
-    margin-top: 1.5rem;
-    padding: 1.5rem;
-    background: var(--green-light);
-    border: 1.5px solid #A8D5BC;
-    border-radius: 12px;
-  }
-
-  .result-section.show { display: block; }
-
-  .result-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 1rem;
-  }
-
-  .result-icon {
-    width: 36px;
-    height: 36px;
-    background: var(--green);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .result-title {
-    font-family: var(--display);
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--ink);
-  }
-
-  .result-sub {
-    font-size: 0.82rem;
-    color: var(--muted);
-  }
-
-  .btn-download {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 0.85rem;
-    background: var(--green);
-    color: #fff;
-    font-family: var(--display);
-    font-size: 1rem;
-    font-weight: 700;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background 0.2s;
-    margin-bottom: 0.75rem;
-  }
-
-  .btn-download:hover { background: #155e37; }
-
-  .btn-convert-again {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 100%;
-    padding: 0.7rem;
-    background: none;
-    color: var(--muted);
-    font-family: var(--body);
-    font-size: 0.875rem;
-    font-weight: 500;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-convert-again:hover { border-color: var(--ink); color: var(--ink); }
-
-  /* STATS PREVIEW */
-  .xlsform-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 1rem;
-  }
-
-  .stat-box {
-    background: #fff;
-    border: 1px solid #A8D5BC;
-    border-radius: 8px;
-    padding: 0.75rem;
-    text-align: center;
-  }
-
-  .stat-num {
-    font-family: var(--mono);
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--green);
-    display: block;
-  }
-
-  .stat-label {
-    font-size: 0.72rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-top: 2px;
-  }
-
-  /* ERROR */
-  .error-section {
-    display: none;
-    margin-top: 1.5rem;
-    padding: 1rem 1.25rem;
-    background: #FFF3F2;
-    border: 1.5px solid #F5C1BE;
-    border-radius: 10px;
-    color: var(--red);
-    font-size: 0.88rem;
-  }
-  .error-section.show { display: block; }
-  .error-section strong { font-weight: 600; }
-
-  /* HOW IT WORKS */
-  .how-section {
-    max-width: 780px;
-    margin: 0 auto 4rem;
-    padding: 0 2rem;
-  }
-
-  .section-label {
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .section-label::before {
-    content: '';
-    display: inline-block;
-    width: 24px;
-    height: 1.5px;
-    background: var(--border);
-  }
-
-  .steps-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5px;
-    background: var(--border);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-  }
-
-  @media (max-width: 600px) { .steps-grid { grid-template-columns: 1fr; } }
-
-  .step-card {
-    background: #fff;
-    padding: 1.5rem;
-    position: relative;
-  }
-
-  .step-num {
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    margin-bottom: 0.75rem;
-    display: block;
-  }
-
-  .step-card h4 {
-    font-family: var(--display);
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: 0.4rem;
-    letter-spacing: -0.01em;
-  }
-
-  .step-card p {
-    font-size: 0.85rem;
-    color: var(--muted);
-    line-height: 1.5;
-  }
-
-  /* KOBO INFO */
-  .kobo-banner {
-    max-width: 780px;
-    margin: 0 auto 4rem;
-    padding: 0 2rem;
-  }
-
-  .kobo-inner {
-    background: var(--ink);
-    color: #fff;
-    border-radius: 12px;
-    padding: 2rem;
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-    flex-wrap: wrap;
-  }
-
-  .kobo-text h3 {
-    font-family: var(--display);
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 0.4rem;
-  }
-
-  .kobo-text p {
-    font-size: 0.875rem;
-    color: rgba(255,255,255,0.65);
-    line-height: 1.5;
-  }
-
-  .btn-kobo {
-    background: var(--accent);
-    color: #fff;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.875rem;
-    padding: 0.65rem 1.25rem;
-    border-radius: 8px;
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: background 0.2s;
-  }
-  .btn-kobo:hover { background: var(--accent-dark); }
-
-  /* FOOTER */
-  footer {
-    border-top: 1.5px solid var(--border);
-    padding: 1.5rem 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    max-width: 780px;
-    margin: 0 auto;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  footer span {
-    font-size: 0.82rem;
-    color: var(--muted);
-    font-family: var(--mono);
-  }
-
-  .spinning {
-    animation: spin 1s linear infinite;
-    display: inline-block;
-  }
-
-  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-  /* API KEY NOTICE */
-  .api-notice {
-    background: #FFFBEA;
-    border: 1.5px solid #E8D97A;
-    border-radius: 10px;
-    padding: 0.875rem 1rem;
-    font-size: 0.85rem;
-    color: #5A4D00;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 1.25rem;
-  }
-
-  .api-key-input {
-    margin-top: 1.25rem;
-  }
-
-  .api-key-input label {
-    display: block;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 6px;
-  }
-
-  .api-key-input input {
-    width: 100%;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    padding: 0.6rem 0.875rem;
-    font-family: var(--mono);
-    font-size: 0.85rem;
-    color: var(--ink);
-    background: #fff;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .api-key-input input:focus { border-color: var(--accent); }
-  .api-key-input input::placeholder { color: #AAA; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LHFORM - Convertisseur Word/PDF en XLSForm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .gradient-bg { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
+        .drop-zone { border: 2px dashed #cbd5e1; transition: all 0.3s ease; }
+        .drop-zone.active { border-color: #3b82f6; background-color: #eff6ff; }
+        .loader { border-top-color: #3b82f6; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-<header>
-  <div class="logo">
-    <span class="logo-dot"></span>
-    LHFORM
-    <span class="badge-free">GRATUIT &amp; ILLIMITÉ</span>
-  </div>
-  <nav>
-    <a href="#comment">Comment ça marche</a>
-    <a href="https://www.kobotoolbox.org" target="_blank">KoboToolbox</a>
-  </nav>
-</header>
-
-<main>
-  <section class="hero">
-    <span class="hero-tag">Word &amp; PDF → XLSForm</span>
-    <h1>Transformez vos questionnaires en <em>XLSForm</em> KoboToolbox</h1>
-    <p>Importez votre document Word ou PDF, LHFORM génère automatiquement un fichier XLSForm (.xlsx) prêt à déployer sur KoboToolbox. Gratuit, sans inscription, sans limite.</p>
-  </section>
-
-  <div class="main-card">
-    <div class="card-header">
-      <span class="dot dot-r"></span>
-      <span class="dot dot-y"></span>
-      <span class="dot dot-g"></span>
-      <span style="margin-left: 8px;">LHFORM — Convertisseur XLSForm</span>
-    </div>
-    <div class="card-body">
-
-      <!-- API KEY INPUT -->
-      <div class="api-key-input">
-        <label>Clé API Anthropic (Claude)</label>
-        <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off">
-        <p style="font-size:0.78rem; color:var(--muted); margin-top:4px;">Votre clé n'est jamais sauvegardée ni transmise à un tiers. Elle est utilisée uniquement dans votre navigateur.</p>
-      </div>
-
-      <!-- DROP ZONE -->
-      <div class="drop-zone" id="dropZone" style="margin-top:1.25rem;">
-        <div class="drop-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
+    <header class="gradient-bg text-white py-6 shadow-lg">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <h1 class="text-3xl font-bold tracking-tight text-white">LHFORM</h1>
+            <nav class="hidden md:block">
+                <span class="bg-white/20 px-4 py-1 rounded-full text-sm font-medium">Conversion Gratuite & Illimitée</span>
+            </nav>
         </div>
-        <h3>Glissez votre document ici</h3>
-        <p>ou cliquez pour sélectionner un fichier</p>
-        <button class="btn-select" onclick="document.getElementById('fileInput').click()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Choisir un fichier
-        </button>
-        <div class="formats">
-          <span class="fmt-pill">.docx</span>
-          <span class="fmt-pill">.doc</span>
-          <span class="fmt-pill">.pdf</span>
-          <span class="fmt-pill">.txt</span>
-        </div>
-        <input type="file" id="fileInput" accept=".docx,.doc,.pdf,.txt">
-      </div>
+    </header>
 
-      <!-- FILE INFO -->
-      <div class="file-info" id="fileInfo">
-        <div class="file-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        </div>
-        <div>
-          <div class="file-name" id="fileName">—</div>
-          <div class="file-size" id="fileSize">—</div>
-        </div>
-        <button class="btn-remove" id="btnRemove" title="Supprimer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-
-      <!-- OPTIONS -->
-      <div class="options-section">
-        <div class="options-title">Options de conversion</div>
-        <div class="option-grid">
-          <div class="option-card selected" data-val="auto" onclick="selectOption(this)">
-            <div class="option-check"></div>
-            <div>
-              <div class="option-label">Détection automatique</div>
-              <div class="option-desc">L'IA identifie le type de chaque question</div>
+    <main class="flex-grow container mx-auto px-4 py-12 max-w-4xl">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            <div class="text-center mb-10">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Transformez vos questionnaires en XLSForm</h2>
+                <p class="text-slate-500 text-lg">Importez un PDF, Word ou une Image. L'IA génère votre fichier KoboToolbox immédiatement.</p>
             </div>
-          </div>
-          <div class="option-card" data-val="text_only" onclick="selectOption(this)">
-            <div class="option-check"></div>
-            <div>
-              <div class="option-label">Texte seulement</div>
-              <div class="option-desc">Toutes les questions en type "text"</div>
+
+            <div id="dropZone" class="drop-zone rounded-xl p-12 text-center cursor-pointer mb-8 hover:bg-slate-50 transition-colors">
+                <input type="file" id="fileInput" class="hidden" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg">
+                <div id="uploadPrompt">
+                    <svg class="mx-auto h-16 w-16 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p class="text-xl font-semibold text-slate-700">Cliquez ou glissez votre fichier ici</p>
+                    <p class="text-sm text-slate-400 mt-2 italic">Formats supportés : PDF, Word, PNG, JPG</p>
+                </div>
+                <div id="fileSelected" class="hidden text-blue-600 font-bold text-lg">
+                    <svg class="w-12 h-12 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                    <span id="fileNameDisplay"></span>
+                </div>
             </div>
-          </div>
-          <div class="option-card" data-val="keep_groups" onclick="selectOption(this)">
-            <div class="option-check"></div>
-            <div>
-              <div class="option-label">Conserver les groupes</div>
-              <div class="option-desc">Respecter la structure par sections</div>
+
+            <button id="convertBtn" class="w-full gradient-bg text-white font-bold py-5 rounded-xl shadow-xl hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg" disabled>
+                Lancer la conversion XLSForm
+            </button>
+
+            <div id="statusArea" class="mt-8 hidden text-center">
+                <div class="flex items-center justify-center p-6 bg-blue-50 rounded-xl text-blue-700 mb-2">
+                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8 mr-4"></div>
+                    <span id="statusText" class="font-medium text-lg text-left">Préparation des données...</span>
+                </div>
+                <p id="timeoutWarning" class="text-sm text-amber-600 hidden italic font-medium">Analyse en cours... Pour les documents longs, cela peut prendre plusieurs minutes. Ne fermez pas cette page.</p>
             </div>
-          </div>
-          <div class="option-card" data-val="add_metadata" onclick="selectOption(this)">
-            <div class="option-check"></div>
-            <div>
-              <div class="option-label">Ajouter métadonnées</div>
-              <div class="option-desc">Inclure start, end, deviceid, username</div>
+
+            <div id="downloadArea" class="mt-8 hidden p-8 border-2 border-green-200 bg-green-50 rounded-2xl text-center shadow-inner">
+                <div class="mb-4">
+                    <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto text-green-600">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                </div>
+                <h3 class="text-green-900 font-extrabold mb-2 text-2xl">Conversion réussie !</h3>
+                <p class="text-green-700 mb-6">Votre XLSForm a été généré avec succès.</p>
+                <button id="downloadBtn" class="bg-green-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-green-700 shadow-lg transform transition hover:-translate-y-1 active:translate-y-0 flex items-center mx-auto">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Télécharger le fichier .xlsx
+                </button>
+                <button id="resetBtn" class="mt-4 text-green-600 underline text-sm hover:text-green-800">Convertir un autre fichier</button>
             </div>
-          </div>
         </div>
-        <div class="lang-row">
-          <label>Langue du formulaire :</label>
-          <select id="formLang">
-            <option value="French (fr)">Français</option>
-            <option value="English (en)">English</option>
-            <option value="Arabic (ar)">العربية</option>
-            <option value="Spanish (es)">Español</option>
-            <option value="Portuguese (pt)">Português</option>
-            <option value="Swahili (sw)">Kiswahili</option>
-            <option value="Hausa (ha)">Hausa</option>
-            <option value="Bambara (bm)">Bambara</option>
-          </select>
+    </main>
+
+    <footer class="bg-slate-800 text-slate-400 py-10 mt-auto text-center text-sm border-t border-slate-700">
+        <div class="container mx-auto px-4">
+            <p class="mb-2 font-semibold text-slate-300">LHFORM - Propulsé par l'IA pour la communauté KoboToolbox</p>
+            <p>&copy; 2024 Solution gratuite, illimitée et sans publicité.</p>
         </div>
-      </div>
-
-      <!-- CONVERT BUTTON -->
-      <button class="btn-convert" id="btnConvert" onclick="convertFile()" disabled>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-        Convertir en XLSForm
-      </button>
-
-      <!-- PROGRESS -->
-      <div class="progress-section" id="progressSection">
-        <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
-        <div class="progress-steps">
-          <div class="step-item" id="step1"><div class="step-dot"></div>Extraction du contenu du document…</div>
-          <div class="step-item" id="step2"><div class="step-dot"></div>Analyse des questions par IA…</div>
-          <div class="step-item" id="step3"><div class="step-dot"></div>Génération de la structure XLSForm…</div>
-          <div class="step-item" id="step4"><div class="step-dot"></div>Création du fichier Excel…</div>
-        </div>
-      </div>
-
-      <!-- ERROR -->
-      <div class="error-section" id="errorSection">
-        <strong>Erreur :</strong> <span id="errorMsg">—</span>
-      </div>
-
-      <!-- RESULT -->
-      <div class="result-section" id="resultSection">
-        <div class="result-header">
-          <div class="result-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div>
-            <div class="result-title">XLSForm généré avec succès !</div>
-            <div class="result-sub" id="resultSub">—</div>
-          </div>
-        </div>
-        <div class="xlsform-stats" id="statsGrid"></div>
-        <a class="btn-download" id="btnDownload" href="#" download="formulaire_xlsform.xlsx">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Télécharger le XLSForm (.xlsx)
-        </a>
-        <button class="btn-convert-again" onclick="resetForm()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.87"/></svg>
-          Convertir un autre document
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- HOW IT WORKS -->
-  <section class="how-section" id="comment">
-    <div class="section-label">Comment ça marche</div>
-    <div class="steps-grid">
-      <div class="step-card">
-        <span class="step-num">01 —</span>
-        <h4>Importez votre questionnaire</h4>
-        <p>Glissez-déposez votre document Word (.docx) ou PDF contenant le questionnaire.</p>
-      </div>
-      <div class="step-card">
-        <span class="step-num">02 —</span>
-        <h4>L'IA analyse &amp; structure</h4>
-        <p>Claude (Anthropic) identifie chaque question, son type et ses choix de réponse.</p>
-      </div>
-      <div class="step-card">
-        <span class="step-num">03 —</span>
-        <h4>Téléchargez le XLSForm</h4>
-        <p>Un fichier .xlsx avec les feuilles survey, choices et settings est prêt pour KoboToolbox.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- KOBO BANNER -->
-  <div class="kobo-banner">
-    <div class="kobo-inner">
-      <div class="kobo-text" style="flex:1;">
-        <h3>Déployez directement sur KoboToolbox</h3>
-        <p>Téléchargez le XLSForm généré, puis importez-le dans votre compte KoboToolbox pour le déployer immédiatement sur le terrain.</p>
-      </div>
-      <a href="https://www.kobotoolbox.org" target="_blank" class="btn-kobo">
-        Aller sur KoboToolbox
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-    </div>
-  </div>
-
-</main>
-
-<footer>
-  <span>LHFORM — Outil gratuit &amp; illimité</span>
-  <span>Propulsé par Claude AI (Anthropic)</span>
-</footer>
-
-<script>
-// ===================== STATE =====================
-let currentFile = null;
-let selectedOption = 'auto';
-let conversionOptions = { keep_groups: false, add_metadata: false };
-
-// ===================== DRAG & DROP =====================
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) handleFile(file);
-});
-
-fileInput.addEventListener('change', e => {
-  if (e.target.files[0]) handleFile(e.target.files[0]);
-});
-
-document.getElementById('btnRemove').addEventListener('click', () => {
-  currentFile = null;
-  fileInput.value = '';
-  document.getElementById('fileInfo').classList.remove('show');
-  document.getElementById('btnConvert').disabled = true;
-  hideAll();
-});
-
-function handleFile(file) {
-  const allowed = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/msword', 'application/pdf', 'text/plain'];
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (!['docx','doc','pdf','txt'].includes(ext)) {
-    showError('Format non supporté. Utilisez .docx, .doc, .pdf ou .txt');
-    return;
-  }
-  currentFile = file;
-  document.getElementById('fileName').textContent = file.name;
-  document.getElementById('fileSize').textContent = formatSize(file.size);
-  document.getElementById('fileInfo').classList.add('show');
-  document.getElementById('btnConvert').disabled = false;
-  hideAll();
-}
-
-function formatSize(bytes) {
-  if (bytes < 1024) return bytes + ' o';
-  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' Ko';
-  return (bytes/1024/1024).toFixed(1) + ' Mo';
-}
-
-// ===================== OPTIONS =====================
-function selectOption(el) {
-  const val = el.dataset.val;
-  if (val === 'auto' || val === 'text_only') {
-    document.querySelectorAll('[data-val="auto"],[data-val="text_only"]').forEach(c => c.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedOption = val;
-  } else {
-    el.classList.toggle('selected');
-    conversionOptions[val] = el.classList.contains('selected');
-  }
-}
-
-// ===================== EXTRACTION =====================
-async function extractText(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (ext === 'txt') {
-    return await file.text();
-  }
-  if (ext === 'docx') {
-    const arrayBuffer = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer });
-    return result.value;
-  }
-  if (ext === 'pdf') {
-    // For PDFs, use text extraction via FileReader as base64
-    return await extractPDFText(file);
-  }
-  if (ext === 'doc') {
-    return 'Document .doc détecté. Le contenu sera traité comme texte brut.\n' + await file.text().catch(() => '');
-  }
-  return await file.text();
-}
-
-async function extractPDFText(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        // Try to use pdf.js if available, else send as base64 to API
-        resolve({ isPDF: true, base64: e.target.result.split(',')[1], name: file.name });
-      } catch(err) {
-        resolve({ isPDF: true, base64: e.target.result.split(',')[1], name: file.name });
-      }
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-// ===================== CONVERT =====================
-async function convertFile() {
-  const apiKey = document.getElementById('apiKey').value.trim();
-  if (!apiKey) { showError('Veuillez entrer votre clé API Anthropic (sk-ant-...).'); return; }
-  if (!currentFile) { showError('Veuillez sélectionner un fichier.'); return; }
-
-  hideAll();
-  setProgress(true);
-  document.getElementById('btnConvert').disabled = true;
-
-  try {
-    // Step 1: Extract
-    setStep(1);
-    setProgressBar(20);
-    let content;
-    let isPDF = false;
-    let pdfBase64 = null;
-
-    if (currentFile.name.toLowerCase().endsWith('.pdf')) {
-      const pdfResult = await extractPDFText(currentFile);
-      isPDF = true;
-      pdfBase64 = pdfResult.base64;
-    } else {
-      content = await extractText(currentFile);
-    }
-
-    // Step 2: AI Analysis
-    setStep(2);
-    setProgressBar(45);
-    const lang = document.getElementById('formLang').value;
-    const addMeta = conversionOptions.add_metadata;
-    const keepGroups = conversionOptions.keep_groups;
-    const textOnly = selectedOption === 'text_only';
-
-    let xlsformJSON;
-    if (isPDF) {
-      xlsformJSON = await analyzePDFWithAI(apiKey, pdfBase64, lang, textOnly, keepGroups, addMeta);
-    } else {
-      xlsformJSON = await analyzeWithAI(apiKey, content, lang, textOnly, keepGroups, addMeta);
-    }
-
-    // Step 3: Generate
-    setStep(3);
-    setProgressBar(75);
-    const parsed = parseXLSFormJSON(xlsformJSON);
-
-    // Step 4: Create Excel
-    setStep(4);
-    setProgressBar(95);
-    const blob = generateXLSX(parsed, addMeta);
-    setProgressBar(100);
-
-    // Done
-    showResult(parsed, blob, currentFile.name);
-
-  } catch(err) {
-    setProgress(false);
-    showError(err.message || 'Une erreur est survenue. Vérifiez votre clé API et réessayez.');
-  }
-  document.getElementById('btnConvert').disabled = false;
-}
-
-// ===================== AI ANALYSIS =====================
-async function analyzeWithAI(apiKey, text, lang, textOnly, keepGroups, addMeta) {
-  const prompt = buildPrompt(text, lang, textOnly, keepGroups, addMeta);
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Erreur API: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.content[0].text;
-}
-
-async function analyzePDFWithAI(apiKey, base64, lang, textOnly, keepGroups, addMeta) {
-  const textPrompt = buildPrompt('', lang, textOnly, keepGroups, addMeta);
-  const systemPrompt = `Vous analysez un document PDF contenant un questionnaire. Extrayez toutes les questions et générez un XLSForm valide.`;
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'document',
-            source: { type: 'base64', media_type: 'application/pdf', data: base64 }
-          },
-          {
-            type: 'text',
-            text: buildPrompt('', lang, textOnly, keepGroups, addMeta, true)
-          }
-        ]
-      }]
-    })
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Erreur API: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.content[0].text;
-}
-
-function buildPrompt(text, lang, textOnly, keepGroups, addMeta, isPDF = false) {
-  const docSection = isPDF
-    ? 'Analysez le document PDF joint.'
-    : `Voici le contenu du questionnaire :\n\n---\n${text}\n---`;
-
-  return `Vous êtes un expert en XLSForm et KoboToolbox. ${docSection}
-
-Convertissez ce questionnaire en XLSForm valide. Retournez UNIQUEMENT un JSON (sans balises Markdown, sans explication) au format suivant :
-
-{
-  "form_title": "Titre du formulaire",
-  "form_id": "form_id_snake_case",
-  "survey": [
-    {
-      "type": "text|integer|decimal|select_one|select_multiple|date|time|datetime|geopoint|note|begin_group|end_group|calculate|image|audio|video|barcode",
-      "name": "variable_name_snake_case",
-      "label": "Libellé de la question en ${lang}",
-      "hint": "",
-      "required": "yes|no",
-      "relevant": "",
-      "constraint": "",
-      "constraint_message": "",
-      "appearance": "",
-      "list_name": "nom_liste_si_select"
-    }
-  ],
-  "choices": [
-    {
-      "list_name": "nom_liste",
-      "name": "valeur",
-      "label": "Libellé du choix en ${lang}"
-    }
-  ]
-}
-
-Règles :
-- ${textOnly ? 'Toutes les questions doivent être de type "text".' : 'Déduire le type de chaque question (select_one pour choix unique, select_multiple pour choix multiples, integer pour nombres entiers, etc.).'}
-- ${keepGroups ? 'Regrouper les questions par section avec begin_group/end_group.' : 'Ne pas créer de groupes.'}
-- Pour select_one et select_multiple, spécifier list_name et créer les choix correspondants.
-- Les noms (name) doivent être en snake_case sans accents.
-- Langue du formulaire : ${lang}.
-- required = "yes" pour les questions obligatoires évidentes, sinon "no".
-${addMeta ? '- Inclure au début du survey : start, end, deviceid, username comme métadonnées.' : ''}
-- Retournez UNIQUEMENT le JSON, rien d'autre.`;
-}
-
-// ===================== PARSE =====================
-function parseXLSFormJSON(raw) {
-  let text = raw.trim();
-  // Remove markdown code fences if present
-  text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-  const data = JSON.parse(text);
-  return data;
-}
-
-// ===================== GENERATE XLSX =====================
-function generateXLSX(data, addMeta) {
-  const wb = XLSX.utils.book_new();
-
-  // --- SURVEY SHEET ---
-  const surveyHeaders = ['type','name','label','hint','required','relevant','constraint','constraint_message','appearance'];
-  const surveyRows = [surveyHeaders];
-
-  if (addMeta) {
-    // Ensure metadata questions at the start (if not already)
-    const hasStart = data.survey.some(q => q.name === 'start');
-    if (!hasStart) {
-      surveyRows.push(['start','start','','','','','','','']);
-      surveyRows.push(['end','end','','','','','','','']);
-      surveyRows.push(['deviceid','deviceid','','','','','','','']);
-      surveyRows.push(['username','username','','','','','','','']);
-    }
-  }
-
-  for (const q of data.survey) {
-    let type = q.type || 'text';
-    if ((type === 'select_one' || type === 'select_multiple') && q.list_name) {
-      type = `${type} ${q.list_name}`;
-    }
-    surveyRows.push([
-      type,
-      q.name || '',
-      q.label || '',
-      q.hint || '',
-      q.required || 'no',
-      q.relevant || '',
-      q.constraint || '',
-      q.constraint_message || '',
-      q.appearance || ''
-    ]);
-  }
-
-  const wsSurvey = XLSX.utils.aoa_to_sheet(surveyRows);
-  styleHeaderRow(wsSurvey, surveyHeaders.length);
-  XLSX.utils.book_append_sheet(wb, wsSurvey, 'survey');
-
-  // --- CHOICES SHEET ---
-  const choicesHeaders = ['list_name','name','label'];
-  const choicesRows = [choicesHeaders];
-  if (data.choices && data.choices.length > 0) {
-    for (const c of data.choices) {
-      choicesRows.push([c.list_name || '', c.name || '', c.label || '']);
-    }
-  }
-  const wsChoices = XLSX.utils.aoa_to_sheet(choicesRows);
-  styleHeaderRow(wsChoices, choicesHeaders.length);
-  XLSX.utils.book_append_sheet(wb, wsChoices, 'choices');
-
-  // --- SETTINGS SHEET ---
-  const settingsHeaders = ['form_title','form_id','version','default_language','instance_name'];
-  const settingsData = [
-    settingsHeaders,
-    [
-      data.form_title || 'Formulaire',
-      data.form_id || 'form_' + Date.now(),
-      new Date().toISOString().slice(0,10).replace(/-/g,''),
-      document.getElementById('formLang').value,
-      ''
-    ]
-  ];
-  const wsSettings = XLSX.utils.aoa_to_sheet(settingsData);
-  styleHeaderRow(wsSettings, settingsHeaders.length);
-  XLSX.utils.book_append_sheet(wb, wsSettings, 'settings');
-
-  // Column widths
-  setColWidths(wsSurvey, [20, 25, 45, 30, 10, 20, 20, 25, 15]);
-  setColWidths(wsChoices, [20, 20, 40]);
-  setColWidths(wsSettings, [30, 25, 12, 20, 20]);
-
-  const wbOut = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  return new Blob([wbOut], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-}
-
-function styleHeaderRow(ws, cols) {
-  if (!ws['!ref']) return;
-  for (let c = 0; c < cols; c++) {
-    const addr = XLSX.utils.encode_cell({ r: 0, c });
-    if (!ws[addr]) continue;
-    ws[addr].s = {
-      font: { bold: true, color: { rgb: 'FFFFFF' } },
-      fill: { fgColor: { rgb: '1A4FBF' } },
-      alignment: { horizontal: 'left' }
-    };
-  }
-}
-
-function setColWidths(ws, widths) {
-  ws['!cols'] = widths.map(w => ({ wpx: w * 7 }));
-}
-
-// ===================== UI HELPERS =====================
-function setProgress(show) {
-  document.getElementById('progressSection').classList.toggle('show', show);
-  if (!show) {
-    document.querySelectorAll('.step-item').forEach(s => { s.classList.remove('active','done'); });
-    setProgressBar(0);
-  }
-}
-
-function setStep(n) {
-  for (let i = 1; i < n; i++) {
-    const el = document.getElementById('step'+i);
-    el.classList.remove('active');
-    el.classList.add('done');
-  }
-  const curr = document.getElementById('step'+n);
-  curr.classList.add('active');
-  curr.classList.remove('done');
-}
-
-function setProgressBar(val) {
-  document.getElementById('progressBar').style.width = val + '%';
-}
-
-function showResult(data, blob, originalName) {
-  setProgress(false);
-  const url = URL.createObjectURL(blob);
-  const baseName = originalName.replace(/\.[^.]+$/, '');
-  document.getElementById('btnDownload').href = url;
-  document.getElementById('btnDownload').download = baseName + '_xlsform.xlsx';
-
-  const qCount = data.survey.filter(q =>
-    !['start','end','deviceid','username','begin_group','end_group'].includes(q.type) &&
-    !['start','end','deviceid','username'].includes(q.name)
-  ).length;
-  const choicesCount = data.choices ? data.choices.length : 0;
-  const listsCount = data.choices ? [...new Set(data.choices.map(c => c.list_name))].length : 0;
-
-  document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-box"><span class="stat-num">${qCount}</span><div class="stat-label">Questions</div></div>
-    <div class="stat-box"><span class="stat-num">${choicesCount}</span><div class="stat-label">Réponses</div></div>
-    <div class="stat-box"><span class="stat-num">${listsCount}</span><div class="stat-label">Listes</div></div>
-  `;
-  document.getElementById('resultSub').textContent = `"${data.form_title || 'Formulaire'}" — prêt pour KoboToolbox`;
-  document.getElementById('resultSection').classList.add('show');
-}
-
-function showError(msg) {
-  document.getElementById('errorMsg').textContent = msg;
-  document.getElementById('errorSection').classList.add('show');
-}
-
-function hideAll() {
-  document.getElementById('progressSection').classList.remove('show');
-  document.getElementById('resultSection').classList.remove('show');
-  document.getElementById('errorSection').classList.remove('show');
-}
-
-function resetForm() {
-  currentFile = null;
-  fileInput.value = '';
-  document.getElementById('fileInfo').classList.remove('show');
-  document.getElementById('btnConvert').disabled = true;
-  hideAll();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// Enable button when API key is entered and file selected
-document.getElementById('apiKey').addEventListener('input', () => {
-  const has = document.getElementById('apiKey').value.trim().length > 10;
-  const hasFile = !!currentFile;
-  document.getElementById('btnConvert').disabled = !(has && hasFile);
-});
-
-// Recalculate on file selection
-const origHandleFile = handleFile;
-window.handleFile = function(file) {
-  origHandleFile(file);
-  const has = document.getElementById('apiKey').value.trim().length > 10;
-  document.getElementById('btnConvert').disabled = !has;
-};
-</script>
+    </footer>
+
+    <script>
+        const apiKey = ""; 
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const convertBtn = document.getElementById('convertBtn');
+        const statusArea = document.getElementById('statusArea');
+        const downloadArea = document.getElementById('downloadArea');
+        const statusText = document.getElementById('statusText');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const timeoutWarning = document.getElementById('timeoutWarning');
+        
+        let selectedFile = null;
+        let workbookToDownload = null;
+
+        dropZone.onclick = () => fileInput.click();
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('active'); };
+        dropZone.ondragleave = () => dropZone.classList.remove('active');
+        dropZone.ondrop = (e) => { e.preventDefault(); dropZone.classList.remove('active'); handleFile(e.dataTransfer.files[0]); };
+        fileInput.onchange = (e) => handleFile(e.target.files[0]);
+
+        function handleFile(file) {
+            if (!file) return;
+            selectedFile = file;
+            document.getElementById('uploadPrompt').classList.add('hidden');
+            document.getElementById('fileSelected').classList.remove('hidden');
+            document.getElementById('fileNameDisplay').textContent = file.name;
+            convertBtn.disabled = false;
+            downloadArea.classList.add('hidden');
+        }
+
+        resetBtn.onclick = () => {
+            selectedFile = null;
+            fileInput.value = '';
+            document.getElementById('uploadPrompt').classList.remove('hidden');
+            document.getElementById('fileSelected').classList.add('hidden');
+            downloadArea.classList.add('hidden');
+            convertBtn.disabled = true;
+            timeoutWarning.classList.add('hidden');
+        };
+
+        convertBtn.onclick = async () => {
+            if (!selectedFile) return;
+            statusArea.classList.remove('hidden');
+            downloadArea.classList.add('hidden');
+            convertBtn.disabled = true;
+            statusText.textContent = "Préparation du fichier...";
+            timeoutWarning.classList.add('hidden');
+            
+            try {
+                let textContent = "";
+                let base64Image = null;
+
+                if (selectedFile.type === "application/pdf") {
+                    statusText.textContent = "Extraction du texte PDF (Ceci peut prendre du temps)...";
+                    textContent = await extractPdfText(selectedFile);
+                } else if (selectedFile.name.toLowerCase().endsWith(".docx")) {
+                    statusText.textContent = "Analyse du document Word...";
+                    const arrayBuffer = await selectedFile.arrayBuffer();
+                    const result = await mammoth.extractRawText({ arrayBuffer });
+                    textContent = result.value;
+                } else if (selectedFile.type.startsWith("image/")) {
+                    statusText.textContent = "Optimisation de l'image pour l'IA...";
+                    base64Image = await optimizeImage(selectedFile);
+                }
+
+                if (textContent) {
+                    textContent = textContent.replace(/\s\s+/g, ' ').substring(0, 25000); 
+                }
+
+                statusText.textContent = "L'IA génère la structure XLSForm... (Veuillez patienter)";
+                setTimeout(() => timeoutWarning.classList.remove('hidden'), 8000);
+
+                const jsonData = await getXlsFormFromAI(textContent, base64Image);
+                
+                statusText.textContent = "Construction du fichier Excel...";
+                workbookToDownload = createExcelWorkbook(jsonData);
+                
+                statusArea.classList.add('hidden');
+                downloadArea.classList.remove('hidden');
+                
+                downloadBtn.onclick = () => {
+                    XLSX.writeFile(workbookToDownload, `LHFORM_${selectedFile.name.split('.')[0]}.xlsx`);
+                };
+
+            } catch (error) {
+                console.error(error);
+                statusText.textContent = "Désolé, une erreur est survenue : " + error.message;
+                timeoutWarning.classList.add('hidden');
+                setTimeout(() => { statusArea.classList.add('hidden'); convertBtn.disabled = false; }, 8000);
+            }
+        };
+
+        async function extractPdfText(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let text = "";
+            const maxPages = Math.min(pdf.numPages, 30); // Étendu à 30 pages
+            for (let i = 1; i <= maxPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                text += content.items.map(item => item.str).join(" ") + "\n";
+            }
+            return text.trim();
+        }
+
+        async function optimizeImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 1600; // Un peu plus grand pour plus de précision
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
+                    };
+                };
+            });
+        }
+
+        async function getXlsFormFromAI(textContent, base64Image) {
+            const systemPrompt = "Tu es un expert XLSForm spécialisé dans la conversion de documents papier ou numériques en formulaires KoboToolbox. Tu dois extraire toutes les questions et les choix de réponse. Réponds UNIQUEMENT avec un objet JSON pur contenant les clés 'survey' et 'choices'.";
+            const userQuery = textContent ? `Convertis ce contenu en XLSForm: ${textContent}` : "Analyse cette image de questionnaire et génère le XLSForm JSON correspondant.";
+
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: userQuery },
+                        ...(base64Image ? [{ inlineData: { mimeType: "image/jpeg", data: base64Image } }] : [])
+                    ]
+                }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
+            };
+
+            const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (!result.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error("Réponse de l'IA incomplète.");
+            return JSON.parse(result.candidates[0].content.parts[0].text);
+        }
+
+        async function fetchWithRetry(url, options, retries = 5) {
+            const TIMEOUT_MS = 1200000; // 20 minutes en millisecondes
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+                    const response = await fetch(url, { ...options, signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    if (response.ok) return response;
+                } catch (e) {
+                    if (e.name === 'AbortError') throw new Error("Le traitement a pris trop de temps (limite de 20 min).");
+                    if (i === retries - 1) throw e;
+                }
+                await new Promise(res => setTimeout(res, 3000));
+            }
+            throw new Error("Impossible de joindre le service après plusieurs tentatives.");
+        }
+
+        function createExcelWorkbook(data) {
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.survey || []), "survey");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.choices || []), "choices");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{ form_title: "LHFORM Export", form_id: "lhform_" + Date.now() }]), "settings");
+            return wb;
+        }
+    </script>
 </body>
 </html>
